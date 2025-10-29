@@ -159,6 +159,33 @@ fastify.get('/analytics/top-products-filtrado', async (request, reply) => {
   }
 });
 
+// Filtro de tempo de entrega dia/horário
+fastify.get('/analytics/delivery-performance', async (request, reply) => {
+  const { groupBy = 'hour' } = request.query;
+  const groupingSql = groupBy === 'day' 
+    ? Prisma.sql`EXTRACT(ISODOW FROM created_at)` 
+    : Prisma.sql`EXTRACT(HOUR FROM created_at)`;
+
+  try {
+    const result = await fastify.prisma.$queryRaw`
+      SELECT 
+        ${groupingSql} AS grupo,
+        AVG(delivery_seconds) AS tempo_medio_segundos,
+        COUNT(id) AS total_entregas
+      FROM sales
+      WHERE 
+        delivery_seconds IS NOT NULL 
+        AND sale_status_desc <> 'CANCELLED'
+      GROUP BY grupo
+      ORDER BY grupo ASC;
+    `;
+    return result;
+  } catch (err) {
+    fastify.log.error(err);
+    reply.code(500).send({ error: 'Erro ao consultar o banco de dados', details: err.message });
+  }
+});
+
 // Iniciação do servidor
 const start = async () => {
   try {
