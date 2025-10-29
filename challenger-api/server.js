@@ -43,7 +43,6 @@ fastify.get('/analytics/overview', async (request, reply) => {
   }
 });
 
-
 // Faturamento por canal
 fastify.get('/analytics/faturamento-por-canal', async (request, reply) => {
   const { startDate, endDate } = request.query;
@@ -67,6 +66,38 @@ fastify.get('/analytics/faturamento-por-canal', async (request, reply) => {
       JOIN channels c ON s.channel_id = c.id
       WHERE ${whereClause}
       GROUP BY c.name
+      ORDER BY faturamento_total DESC;
+    `;
+    return result;
+  } catch (err) {
+    fastify.log.error(err);
+    reply.code(500).send({ error: 'Erro ao consultar o banco de dados', details: err.message });
+  }
+});
+
+// Faturamento por loja
+fastify.get('/analytics/faturamento-por-loja', async (request, reply) => {
+  const { startDate, endDate } = request.query;
+  const filters = [Prisma.sql`s.sale_status_desc <> 'CANCELLED'`];
+  if (startDate) {
+    filters.push(Prisma.sql`s.created_at >= ${new Date(startDate)}`);
+  }
+  if (endDate) {
+    filters.push(Prisma.sql`s.created_at <= ${new Date(endDate)}`);
+  }
+  const whereClause = Prisma.join(filters, ' AND ');
+
+  try {
+    const result = await fastify.prisma.$queryRaw`
+      SELECT 
+        st.name AS loja_nome,
+        SUM(s.total_amount) AS faturamento_total,
+        COUNT(s.id) AS total_pedidos,
+        AVG(s.total_amount) AS ticket_medio
+      FROM sales s
+      JOIN stores st ON s.store_id = st.id
+      WHERE ${whereClause}
+      GROUP BY st.name
       ORDER BY faturamento_total DESC;
     `;
     return result;
