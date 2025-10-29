@@ -15,6 +15,36 @@ fastify.get('/', async (request, reply) => {
   return { hello: 'Bem-vindo à API de Analytics com Prisma!' };
 });
 
+
+// Visão Geral (Faturamento, Pedidos, Ticket Médio)
+fastify.get('/analytics/overview', async (request, reply) => {
+  const { startDate, endDate } = request.query;
+  const filters = [Prisma.sql`sale_status_desc <> 'CANCELLED'`];
+  if (startDate) {
+    filters.push(Prisma.sql`created_at >= ${new Date(startDate)}`);
+  }
+  if (endDate) {
+    filters.push(Prisma.sql`created_at <= ${new Date(endDate)}`);
+  }
+  const whereClause = Prisma.join(filters, ' AND ');
+
+  try {
+    const result = await fastify.prisma.$queryRaw`
+      SELECT 
+        SUM(total_amount) AS faturamento_total,
+        COUNT(id) AS total_pedidos,
+        AVG(total_amount) AS ticket_medio
+      FROM sales
+      WHERE ${whereClause};
+    `;
+    return result[0];
+  } catch (err) {
+    fastify.log.error(err);
+    reply.code(500).send({ error: 'Erro ao consultar o banco de dados', details: err.message });
+  }
+});
+
+
 // Iniciação do servidor
 const start = async () => {
   try {
