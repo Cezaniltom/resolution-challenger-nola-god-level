@@ -107,6 +107,58 @@ fastify.get('/analytics/faturamento-por-loja', async (request, reply) => {
   }
 });
 
+// Filtro de produto mais vendido por dia
+fastify.get('/analytics/top-products-filtrado', async (request, reply) => {
+  const { 
+    channel,
+    dayOfWeek,
+    startDate,
+    endDate,
+    limit = 10 
+  } = request.query;
+
+  const limitNum = parseInt(limit);
+  const whereClauses = [Prisma.sql`s.sale_status_desc <> 'CANCELLED'`];
+
+  if (channel) {
+    whereClauses.push(Prisma.sql`c.name = ${channel}`);
+  }
+  if (dayOfWeek) {
+    whereClauses.push(Prisma.sql`EXTRACT(ISODOW FROM s.created_at) = ${parseInt(dayOfWeek)}`);
+  }
+  if (startDate) {
+    whereClauses.push(Prisma.sql`s.created_at >= ${new Date(startDate)}`);
+  }
+  if (endDate) {
+    const inclusiveEndDate = new Date(endDate);
+    inclusiveEndDate.setDate(inclusiveEndDate.getDate() + 1);
+    
+    whereClauses.push(Prisma.sql`s.created_at < ${inclusiveEndDate}`);
+  }
+  
+  const where = Prisma.join(whereClauses, ' AND ');
+
+  try {
+    const result = await fastify.prisma.$queryRaw`
+      SELECT 
+        p.name AS produto_nome,
+        SUM(ps.quantity) AS total_vendido
+      FROM products p
+      JOIN product_sales ps ON p.id = ps.product_id
+      JOIN sales s ON ps.sale_id = s.id
+      JOIN channels c ON s.channel_id = c.id
+      WHERE ${where}
+      GROUP BY p.id, p.name
+      ORDER BY total_vendido DESC
+      LIMIT ${limitNum};
+    `;
+    return result;
+  } catch (err) {
+    fastify.log.error(err);
+    reply.code(500).send({ error: 'Erro ao consultar o banco de dados', details: err.message });
+  }
+});
+
 // Iniciação do servidor
 const start = async () => {
   try {
