@@ -223,6 +223,34 @@ fastify.get('/analytics/customers-churn-risk', async (request, reply) => {
   }
 });
 
+// Produtos com menor margem
+fastify.get('/analytics/products-by-margin-proxy', async (request, reply) => {
+  const limit = parseInt(request.query.limit) || 20;
+
+  try {
+    const result = await fastify.prisma.$queryRaw`
+      SELECT
+        p.name AS produto_nome,
+        p.id AS product_id,
+        AVG(ps.base_price) as preco_base_medio,
+        AVG(ps.total_price) as preco_vendido_medio,
+        AVG(ps.total_price / NULLIF(ps.base_price, 0)) * 100 AS percentual_preco_base
+      FROM product_sales ps
+      JOIN products p ON ps.product_id = p.id
+      WHERE 
+        ps.base_price > 0
+      GROUP BY p.id, p.name
+      ORDER BY
+        percentual_preco_base ASC
+      LIMIT ${limit};
+    `;
+    return result;
+  } catch (err) {
+    fastify.log.error(err);
+    reply.code(500).send({ error: 'Erro ao consultar o banco de dados', details: err.message });
+  }
+});
+
 // Iniciação do servidor
 const start = async () => {
   try {
