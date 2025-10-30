@@ -186,6 +186,43 @@ fastify.get('/analytics/delivery-performance', async (request, reply) => {
   }
 });
 
+// clientes que compraram 3+ vezes mas não voltam há 30 dias?
+fastify.get('/analytics/customers-churn-risk', async (request, reply) => {
+  const frequency = parseInt(request.query.frequency) || 3;
+  const recencyDays = parseInt(request.query.recencyDays) || 30;
+
+  try {
+    const result = await fastify.prisma.$queryRaw`
+      WITH CustomerStats AS (
+        SELECT
+          customer_id,
+          COUNT(id) AS frequencia,
+          MAX(created_at::date) AS ultima_compra_data
+        FROM sales
+        WHERE customer_id IS NOT NULL AND sale_status_desc <> 'CANCELLED'
+        GROUP BY customer_id
+      )
+      SELECT
+        c.customer_name,
+        c.phone_number,
+        c.email,
+        cs.frequencia,
+        cs.ultima_compra_data
+      FROM CustomerStats cs
+      JOIN customers c ON cs.customer_id = c.id
+      WHERE
+        cs.frequencia >= ${frequency}
+        AND cs.ultima_compra_data <= (CURRENT_DATE - ${recencyDays})
+      ORDER BY
+        cs.ultima_compra_data ASC;
+    `;
+    return result;
+  } catch (err) {
+    fastify.log.error(err);
+    reply.code(500).send({ error: 'Erro ao consultar o banco de dados', details: err.message });
+  }
+});
+
 // Iniciação do servidor
 const start = async () => {
   try {
