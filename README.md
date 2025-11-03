@@ -2,10 +2,7 @@
 
 Este projeto é o frontend de um dashboard de analytics completo, projetado para resolver o "Problema da Maria" (o desafio de *Analytics para Restaurantes*). Ele consome uma API de backend (Node.js/Fastify/Prisma) e apresenta os dados de forma profissional, interativa e flexível.
 
-O dashboard evoluiu de um simples relatório estático para uma ferramenta de exploração de dados, permitindo ao usuário filtrar produtos por múltiplos critérios, analisar clientes em risco (com ordenação e paginação) e obter insights acionáveis através de uma **Análise de IA (simulada)**.
-
-![Screenshot da Visão Geral do Dashboard](https://i.imgur.com/image_03a0cf.png)
-*(Sugestão: Substitua este link pela URL de um screenshot final do seu projeto, como o 'image_03a0cf.png')*
+![Screenshot da Visão Geral do Dashboard](https://imgur.com/a/UooiVLi))
 
 ## Sumário
 
@@ -83,13 +80,13 @@ Para fornecer "insights acionáveis" (um requisito chave do desafio), adicionamo
 
 ### Frontend (Este Repositório)
 
-* **Framework:** Next.js 16+ (App Router)
+* **Framework:** Next.js 15+ (App Router)
 * **Linguagem:** JavaScript (JSX)
 * **Estilização:** Tailwind CSS
 * **Gráficos:** `recharts` (Bar, Pie, Line)
 * **UI/Componentes:** `@headlessui/react` (Transições, Modais)
 * **Ícones:** `lucide-react`
-* **Gerenciador de Pacotes:** `yarn`
+* **Gerenciador de Pacotes:** `npm`
 
 ### Backend (Repositório Separado)
 
