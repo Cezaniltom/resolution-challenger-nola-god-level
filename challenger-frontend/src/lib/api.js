@@ -1,3 +1,4 @@
+// src/lib/api.js
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function fetcher(url, params) {
@@ -5,7 +6,7 @@ async function fetcher(url, params) {
 
   if (params) {
     const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([ v ]) => v != null)
+      Object.entries(params).filter(([, v]) => v != null && v !== '') // Melhorado: também remove strings vazias
     );
     const query = new URLSearchParams(cleanParams).toString();
     if (query) {
@@ -14,7 +15,12 @@ async function fetcher(url, params) {
   }
 
   try {
-    const response = await fetch(fullUrl);
+    // --- 👇 A CORREÇÃO ESTÁ AQUI 👇 ---
+    // Diz ao Next.js para NÃO fazer cache desta chamada.
+    // Vá sempre buscar os dados mais recentes no backend.
+    const response = await fetch(fullUrl, { cache: 'no-store' });
+    // --- FIM DA CORREÇÃO ---
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Erro ao buscar dados da API');
@@ -22,7 +28,8 @@ async function fetcher(url, params) {
     return response.json();
   } catch (err) {
     console.error(`Falha no fetch para ${fullUrl}:`, err);
-    throw err;
+    // Retorna nulo para não quebrar a UI
+    return null; 
   }
 }
 
@@ -48,7 +55,8 @@ export const analyticsApi = {
   getProductsByMarginProxy: (params) =>
     fetcher(`/analytics/products-by-margin-proxy`, params),
 
+  // Corrigido o bug da barra que mencionei antes
   getMonthlyRevenue(params) {
-    return fetcher('analytics/revenue/monthly', params) 
+    return fetcher('/analytics/revenue/monthly', params) 
   }
 };

@@ -130,34 +130,93 @@ async function getDeliveryPerformance({ groupBy = 'hour' }) {
 }
 
 //  Clientes que compraram 3+ e não retornaram em 30+ dias
-async function getCustomersChurnRisk({ frequency = 3, recencyDays = 30 }) {
+// src/services/analytics.service.js (NO SEU BACKEND)
+
+// src/services/analytics.service.js (NO SEU BACKEND)
+
+async function getCustomersChurnRisk(filters) {
+    // 1. Lê os novos filtros de paginação e ordenação
+    const { 
+      frequency = 3, 
+      recencyDays = 30, 
+      page = 1, 
+      limit = 10, // Define um limite de 10 por página
+      sortKey = 'ultima_compra_data',
+      sortDirection = 'asc'
+    } = filters;
+
     const freqNum = parseInt(frequency);
     const recencyNum = parseInt(recencyDays);
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum; // Calcula o "pulo"
 
-    return prisma.$queryRaw`
+    // 2. Mapeia as chaves de ordenação com segurança
+    const sortKeyMap = {
+      'customer_name': Prisma.sql`c.customer_name`,
+      'frequencia': Prisma.sql`cs.frequencia`,
+      'ultima_compra_data': Prisma.sql`cs.ultima_compra_data`
+    };
+    const orderByClause = sortKeyMap[sortKey] || Prisma.sql`cs.ultima_compra_data`;
+    const directionClause = sortDirection.toLowerCase() === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`;
+
+    // 3. Query para os dados paginados (com ORDER BY, LIMIT, OFFSET)
+    const customers = await prisma.$queryRaw`
         WITH CustomerStats AS (
-        SELECT
-            customer_id,
-            COUNT(id) AS frequencia,
-            MAX(created_at::date) AS ultima_compra_data
-        FROM sales
-        WHERE customer_id IS NOT NULL AND sale_status_desc <> 'CANCELLED'
-        GROUP BY customer_id
+            SELECT
+                customer_id,
+                COUNT(id) AS frequencia,
+                MAX(created_at::date) AS ultima_compra_data
+            FROM sales
+            WHERE customer_id IS NOT NULL AND sale_status_desc <> 'CANCELLED'
+            GROUP BY customer_id
         )
         SELECT
-        c.customer_name,
-        c.phone_number,
-        c.email,
-        cs.frequencia,
-        cs.ultima_compra_data
+            c.customer_name,
+            c.phone_number,
+            c.email,
+            cs.frequencia,
+            cs.ultima_compra_data
         FROM CustomerStats cs
         JOIN customers c ON cs.customer_id = c.id
         WHERE
-        cs.frequencia >= ${freqNum}
-        AND cs.ultima_compra_data <= (CURRENT_DATE - CAST(${recencyNum} AS INT))
+            cs.frequencia >= ${freqNum}
+            AND cs.ultima_compra_data <= (CURRENT_DATE - CAST(${recencyNum} AS INT))
         ORDER BY
-        cs.ultima_compra_data ASC;
+            ${orderByClause} ${directionClause}
+        LIMIT ${limitNum}
+        OFFSET ${offset};
     `;
+
+    // 4. Query SEPARADA para a contagem total (para a paginação)
+    const totalResult = await prisma.$queryRaw`
+        WITH CustomerStats AS (
+            SELECT
+                customer_id,
+                COUNT(id) AS frequencia,
+                MAX(created_at::date) AS ultima_compra_data
+            FROM sales
+            WHERE customer_id IS NOT NULL AND sale_status_desc <> 'CANCELLED'
+            GROUP BY customer_id
+        )
+        SELECT COUNT(*)
+        FROM CustomerStats cs
+        WHERE
+            cs.frequencia >= ${freqNum}
+            AND cs.ultima_compra_data <= (CURRENT_DATE - CAST(${recencyNum} AS INT));
+    `;
+
+    const totalCount = parseInt(totalResult[0].count);
+
+    // 5. Retorna um OBJETO, não mais um array
+    return {
+        customers: customers.map(c => ({
+            ...c,
+            frequencia: c.frequencia.toString() 
+        })),
+        totalCount: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum)
+    };
 }
 
 // Produtos para Repensar preço

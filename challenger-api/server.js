@@ -6,12 +6,22 @@ require('dotenv').config();
 
 const fastify = require('fastify')({ logger: true });
 const { prisma } = require('./src/lib/prisma');
+
+// --- 👇 CORREÇÃO DO CORS ADICIONADA AQUI 👇 ---
+// Registra o plugin de CORS antes de todas as rotas
+fastify.register(require('@fastify/cors'), {
+  origin: 'http://localhost:3000', // Permite requisições do seu frontend (Next.js)
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+});
+// --- FIM DA CORREÇÃO ---
+
 const gracefulShutdown = async () => {
   fastify.log.info('Desconectando do banco de dados...');
   await prisma.$disconnect();
   process.exit(0);
 };
 
+// Registra as rotas (DEPOIS do CORS)
 fastify.register(require('./src/routes/index'));
 
 const start = async () => {
