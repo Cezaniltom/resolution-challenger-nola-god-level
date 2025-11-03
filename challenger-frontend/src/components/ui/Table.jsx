@@ -1,4 +1,3 @@
-// src/components/ui/Table.jsx
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
 export default function Table({
@@ -12,11 +11,10 @@ export default function Table({
   
   const getSortIcon = (key) => {
     if (!sortConfig || sortConfig.key !== key) {
-      // Ícone sutil para mostrar que é clicável
       return <ArrowUp size={14} className="ml-1 text-gray-300" />;
     }
     if (sortConfig.direction === 'asc') {
-      return <ArrowUp size={14} className="ml-1 text-blue-600" />; // Cor de destaque
+      return <ArrowUp size={14} className="ml-1 text-blue-600" />;
     }
     return <ArrowDown size={14} className="ml-1 text-blue-600" />;
   };

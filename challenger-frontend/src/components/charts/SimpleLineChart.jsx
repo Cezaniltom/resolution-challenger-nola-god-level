@@ -1,4 +1,3 @@
-// src/components/charts/SimpleLineChart.jsx
 "use client";
 import {
   ResponsiveContainer,
@@ -10,26 +9,25 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export default function SimpleLineChart({ data }) {
-  // Formata os dados
-  const chartData = data.map((item) => ({
-    name: `${item.grupo}h`, // ex: 18 -> "18h"
-    "Tempo (min)": parseFloat(item.tempo_medio_segundos / 60).toFixed(1), // Segundos para Minutos
-  }));
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-gray-300 bg-white p-2 shadow-md">
+        <p className="font-semibold text-gray-800">{label}</p>
+        <p className="text-blue-700">
+          {`Tempo Médio: ${payload[0].value} min`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border border-gray-300 bg-white p-2 shadow-md">
-          <p className="font-semibold text-gray-800">{label}</p>
-          <p className="text-blue-700">
-            {`Tempo Médio: ${payload[0].value} min`}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+export default function SimpleLineChart({ data }) {
+  const chartData = data.map((item) => ({
+    name: `${item.grupo}h`,
+    "Tempo (min)": parseFloat(item.tempo_medio_segundos / 60).toFixed(1),
+  }));
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -51,7 +49,7 @@ export default function SimpleLineChart({ data }) {
         <Line
           type="monotone"
           dataKey="Tempo (min)"
-          stroke="#1976d2" // Tom de azul
+          stroke="#1976d2"
           strokeWidth={3}
           dot={{ r: 4 }}
           activeDot={{ r: 6 }}

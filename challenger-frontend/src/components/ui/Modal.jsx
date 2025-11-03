@@ -1,4 +1,3 @@
-// src/components/ui/Modal.jsx
 "use client";
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';

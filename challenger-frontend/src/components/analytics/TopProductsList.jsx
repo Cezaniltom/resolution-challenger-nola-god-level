@@ -1,7 +1,5 @@
-// src/components/analytics/TopProductsList.jsx
 import { formatCurrencyBRL } from "@/lib/utils";
 
-// Helper para limpar o nome do produto
 function formatProductName(value) {
   if (typeof value === 'string' && value.includes(' #')) {
     return value.split(' #')[0];
@@ -10,7 +8,6 @@ function formatProductName(value) {
 }
 
 export default function TopProductsList({ data }) {
-  // O backend pode retornar 'total_vendido' (quantidade) ou 'faturamento_total'
   const hasRevenue = data.length > 0 && data[0].faturamento_total;
 
   return (

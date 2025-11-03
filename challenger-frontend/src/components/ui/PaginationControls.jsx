@@ -1,4 +1,3 @@
-// src/components/ui/PaginationControls.jsx
 "use client";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -14,7 +13,7 @@ export default function PaginationControls({
     onPageChange(Math.min(totalPages, currentPage + 1));
   };
 
-  if (totalPages <= 1) return null; // Não mostra nada se só tem 1 página
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">

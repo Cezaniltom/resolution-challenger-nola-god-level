@@ -1,14 +1,13 @@
-// src/app/dashboard-panel/products/page.jsx
 "use client"; 
 
 import { useState, useEffect, Fragment } from "react"; 
 import Header from "@/components/layout/Header";
 import Table from "@/components/ui/Table";
 import { analyticsApi } from "@/lib/api";
-import { ListFilter, CalendarDays, Calendar, X, Loader2 } from 'lucide-react';
+import { ListFilter, CalendarDays, Calendar, X, Loader2, Sparkles, Clock } from 'lucide-react';
 import { Transition } from '@headlessui/react'; 
+import AiAnalysisModal from "@/components/analytics/AiAnalysisModal";
 
-// --- Constantes para os Dropdowns ---
 const canaisDisponiveis = [ "Presencial", "iFood", "Rappi", "Uber Eats", "WhatsApp", "App Próprio" ];
 const diasDaSemana = [
   { label: 'Segunda', value: 1 }, { label: 'Terça', value: 2 },
@@ -16,8 +15,13 @@ const diasDaSemana = [
   { label: 'Sexta', value: 5 }, { label: 'Sábado', value: 6 },
   { label: 'Domingo', value: 7 },
 ];
+const horariosDisponiveis = [
+  { label: 'Manhã (06-12h)', value: 'manha' },
+  { label: 'Tarde (12-18h)', value: 'tarde' },
+  { label: 'Noite (18-24h)', value: 'noite' },
+];
 
-// (Função formatProductName como antes)
+
 function formatProductName(value) {
   if (typeof value === 'string' && value.includes(' #')) {
     return value.split(' #')[0];
@@ -25,25 +29,20 @@ function formatProductName(value) {
   return value;
 }
 
-// --- 👇 1. FUNÇÃO HELPER PARA O DELAY 👇 ---
-/**
- * Cria uma pausa (delay) em milissegundos.
- */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function ProductsPage() {
-  // --- Estados dos Filtros ---
   const [canal, setCanal] = useState('');
   const [diaSemana, setDiaSemana] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
+  const [horario, setHorario] = useState('');
   const [tipoDataInicio, setTipoDataInicio] = useState('text');
   const [tipoDataFim, setTipoDataFim] = useState('text');
-  
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
-  // --- 👇 2. useEffect ATUALIZADO COM DELAY MÍNIMO 👇 ---
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true); 
@@ -52,12 +51,11 @@ export default function ProductsPage() {
       if (diaSemana) filters.dayOfWeek = diaSemana;
       if (dataInicio) filters.startDate = dataInicio;
       if (dataFim) filters.endDate = dataFim;
+      if (horario) filters.timeOfDay = horario;
       
-      // Inicia a chamada da API E o timer do delay mínimo ao mesmo tempo
       const apiCallPromise = analyticsApi.getTopProductsFiltrado(filters);
-      const minDelayPromise = sleep(500); // 500ms = 0.5 segundos de delay MÍNIMO
+      const minDelayPromise = sleep(500); 
       
-      // Espera os DOIS terminarem
       const [productData] = await Promise.all([
         apiCallPromise,
         minDelayPromise
@@ -67,9 +65,9 @@ export default function ProductsPage() {
       setIsLoading(false); 
     }
     fetchData();
-  }, [canal, diaSemana, dataInicio, dataFim]); 
+  }, [canal, diaSemana, dataInicio, dataFim, horario]);
 
-  // --- Definições da Tabela (como antes) ---
+  // --- Definições da Tabela ---
   const headers = ["Produto", "Total Vendido (Qtd)"];
   const keys = ["produto_nome", "total_vendido"]; 
   const formatters = {
@@ -81,27 +79,36 @@ export default function ProductsPage() {
     setDiaSemana('');
     setDataInicio('');
     setDataFim('');
+    setHorario('');
   };
+
+  // Botão da IA
+  const aiButton = (
+    <button
+      onClick={() => setIsAiModalOpen(true)}
+      disabled={isLoading}
+      className="flex items-center gap-2 rounded-md bg-blue-700 py-2 px-4 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+    >
+      <Sparkles size={16} />
+      Análise Rápida (IA)
+    </button>
+  );
 
   return (
     <>
-      <Header title="Produtos" />
+      <Header title="Produtos" actionComponent={aiButton} />
 
       <div className="p-6">
-        {/* O CARD BRANCO PRINCIPAL */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
           
-          {/* CABEÇALHO DO CARD (Título) */}
           <div className="p-4 sm:p-6">
             <h2 className="text-xl font-bold text-gray-800">Produtos Mais Vendidos</h2>
             <p className="text-sm text-gray-500">Filtre produtos por canal, dia e período.</p>
           </div>
           
-          {/* O PAINEL DE FILTROS (como antes) */}
           <div className="border-t border-gray-200 p-4 sm:p-6">
-             <div className="grid grid-cols-1 items-end gap-x-4 gap-y-5 md:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-1 items-end gap-x-4 gap-y-5 md:grid-cols-2 lg:grid-cols-6">
               
-              {/* Filtro de Canal (com classes completas) */}
               <div className="lg:col-span-1">
                 <label htmlFor="canal-filter" className="block text-sm font-medium text-gray-700">Canal</label>
                 <div className="relative mt-1">
@@ -118,7 +125,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Filtro de Dia da Semana (com classes completas) */}
               <div className="lg:col-span-1">
                 <label htmlFor="dia-filter" className="block text-sm font-medium text-gray-700">Dia da Semana</label>
                 <div className="relative mt-1">
@@ -135,7 +141,22 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Filtro de Data Início (com classes completas) */}
+              <div className="lg:col-span-1">
+                <label htmlFor="horario-filter" className="block text-sm font-medium text-gray-700">Horário</label>
+                <div className="relative mt-1">
+                  <Clock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    id="horario-filter"
+                    value={horario}
+                    onChange={(e) => setHorario(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 py-2 pl-10 pr-10 text-base transition-all duration-150 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  >
+                    <option value="">Todos</option>
+                    {horariosDisponiveis.map((h) => (<option key={h.value} value={h.value}>{h.label}</option>))}
+                  </select>
+                </div>
+              </div>
+
               <div className="lg:col-span-1">
                 <label htmlFor="start-date" className="block text-sm font-medium text-gray-700">Data Início</label>
                 <div className="relative mt-1">
@@ -153,7 +174,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Filtro de Data Fim (com classes completas) */}
               <div className="lg:col-span-1">
                 <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">Data Fim</label>
                 <div className="relative mt-1">
@@ -171,7 +191,6 @@ export default function ProductsPage() {
                 </div>
               </div>
               
-              {/* Botão de Limpar Filtros (com classes completas) */}
               <div className="lg:col-span-1 flex items-end">
                 <button
                   onClick={clearFilters}
@@ -184,9 +203,7 @@ export default function ProductsPage() {
             </div>
           </div>
           
-          {/* A TABELA (com transição de carregamento) */}
           <div className="relative border-t border-gray-200">
-            {/* Overlay de Loading */}
             <Transition
               show={isLoading}
               as={Fragment}
@@ -203,7 +220,6 @@ export default function ProductsPage() {
               </div>
             </Transition>
             
-            {/* O conteúdo da tabela */}
             <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
               {data.length > 0 ? (
                 <Table
@@ -213,15 +229,12 @@ export default function ProductsPage() {
                   formatters={formatters}
                 />
               ) : (
-                // Mostra esta mensagem apenas se NÃO estiver carregando E não houver dados
                 !isLoading && (
                   <p className="py-20 text-center text-gray-500">
                     Nenhum produto encontrado para os filtros selecionados.
                   </p>
                 )
               )}
-              
-              {/* Se estiver carregando mas AINDA não houver dados (primeiro load) */}
               {isLoading && data.length === 0 && (
                 <p className="py-20 text-center text-gray-500">
                   Carregando...
@@ -231,6 +244,13 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      <AiAnalysisModal
+        open={isAiModalOpen}
+        setOpen={setIsAiModalOpen}
+        dashboardData={data} 
+        page="products" 
+      />
     </>
   );
 }

@@ -1,4 +1,3 @@
-// src/components/ui/StatCard.jsx
 import { formatCurrencyBRL } from "@/lib/utils";
 
 export default function StatCard({ title, value, format = "default" }) {

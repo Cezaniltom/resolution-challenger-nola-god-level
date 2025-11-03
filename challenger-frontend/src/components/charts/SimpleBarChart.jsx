@@ -1,4 +1,3 @@
-// src/components/charts/SimpleBarChart.jsx
 "use client"; 
 
 import {
@@ -11,30 +10,24 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-/**
- * @param {Array<Object>} data - Dados para o gráfico
- * @param {string} xAxisKey - A chave do objeto para o eixo X (ex: 'name')
- * @param {string} barKey - A chave do objeto para os dados da barra (ex: 'total')
- * @param {string} [barColor] - Cor da barra
- */
+const CustomTooltip = ({ active, payload, label, barColor }) => {
+  if (active && payload && payload.length) {
+    const value = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(payload[0].value);
+    return (
+      <div className="rounded-lg border border-gray-300 bg-white p-2 shadow-md">
+        <p className="font-semibold text-gray-800">{`${label}`}</p>
+        <p style={{ color: barColor || "#1976d2" }}>{`Total: ${value}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function SimpleBarChart({ data, xAxisKey, barKey, barColor }) {
   
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const value = new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(payload[0].value);
-      return (
-        <div className="rounded-lg border border-gray-300 bg-white p-2 shadow-md">
-          <p className="font-semibold text-gray-800">{`${label}`}</p>
-          <p style={{ color: barColor }}>{`Total: ${value}`}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart
@@ -42,7 +35,7 @@ export default function SimpleBarChart({ data, xAxisKey, barKey, barColor }) {
         margin={{
           top: 5,
           right: 30,
-          left: 0, // Ajustado para dar mais espaço
+          left: 0, 
           bottom: 5,
         }}
       >
@@ -61,7 +54,7 @@ export default function SimpleBarChart({ data, xAxisKey, barKey, barColor }) {
             new Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
-              notation: "compact", // Ex: 80mi
+              notation: "compact", 
               maximumFractionDigits: 0,
             }).format(value)
           }
@@ -70,13 +63,14 @@ export default function SimpleBarChart({ data, xAxisKey, barKey, barColor }) {
           className="text-sm text-gray-600"
         />
 
-        <Tooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} content={<CustomTooltip />} />
+        <Tooltip 
+          cursor={{ fill: "rgba(0,0,0,0.05)" }} 
+          content={<CustomTooltip barColor={barColor} />}
+        />
 
-        {/* --- CORREÇÃO AQUI --- */}
-        {/* Garante que o 'fill' use a prop barColor (que é o azul #1976d2) */}
         <Bar
           dataKey={barKey}
-          fill={barColor || "#1976d2"} // Corrigido para o tema azul
+          fill={barColor || "#1976d2"} 
           name="Total"
           radius={[4, 4, 0, 0]}
           barSize={40}
