@@ -2,6 +2,8 @@
 
 Este projeto é o frontend de um dashboard de analytics completo, projetado para resolver o "Problema da Maria" (o desafio de *Analytics para Restaurantes*). Ele consome uma API de backend (Node.js/Fastify/Prisma) e apresenta os dados de forma profissional, interativa e flexível.
 
+Video do Desafio: https://drive.google.com/file/d/1KCPecVnIMhjWf6ntojb7CFMu_AzIWCiC/view?usp=sharing
+
 ![Screenshot da Visão Geral do Dashboard](https://i.imgur.com/2hQSvpu.png)
 
 ## Sumário
